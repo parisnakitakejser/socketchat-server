@@ -42,13 +42,18 @@ def client_connect():
 
     print(f'online users count: {len(users_online)}')
     print(users_online)
+
     emit('MESSAGE', messeges)
     emit('USER_DATA', users_online[request.sid])
+    emit('USER_ONLINE_PUBLIC_DATA', users_online)
 
 
 @socketio.on('disconnect')
 def client_disconnect():
     print('client disconnect')
+
+    emit('USER_ONLINE_PUBLIC_DATA', users_online)
+
     del users_online[request.sid]
 
 
