@@ -1,0 +1,7 @@
+[flask]
+secret_key = very-seceret
+
+[mongodb]
+host = localhost
+port = 27017
+database = project-socket-chat
