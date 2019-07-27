@@ -7,18 +7,13 @@ import datetime
 
 import library
 from library import messages
+from library import users
 
 config = library.init_config()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = config['flask']['secret_key']
 socketio = SocketIO(app)
-
-
-messeges = {
-    'lobby': [],
-    'members': []
-}
 
 # Flask or Socket.IO transport layer can be added here!
 
@@ -33,55 +28,30 @@ def client_connect():
 
     room = 'lobby'
 
-    users_online[request.sid] = {
-        'username': f'Guest #{guest_vistor_count+1}',
-        'rank': 'guest',
-        'connected_time': time.time(),
-        'room': room
-    }
-    guest_vistor_count += 1
+    mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
+    users.connect(conn=mongodb_conn, room=room, request=request)
+
     join_room(room)
 
-    print(f'online users count: {len(users_online)}')
-    print(users_online)
-
-    mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
-    messages.insert(
-        conn=mongodb_conn,
-        user='system',
-        user_id=request.sid,
-        user_room=room,
-        color='yellow',
-        msg=users_online[request.sid]['username'] +' has connected to this chat room'
-    )
     emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room, limit=5)), json=False, broadcast=True, room=room)
+
+    # emit('USER_DATA', users_online[request.sid])
+    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
+
     mongodb_client.close()
-
-    emit('USER_DATA', users_online[request.sid])
-    emit('USER_ONLINE_PUBLIC_DATA', users_online)
-
 
 @socketio.on('disconnect')
 def client_disconnect():
     print('client disconnect')
-    room = users_online[request.sid]['room']
-
     mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
-    messages.insert(
-        conn=mongodb_conn,
-        user='system',
-        user_id=request.sid,
-        user_room=room,
-        color='pink',
-        msg=users_online[request.sid]['username'] + ' has disconnected from the chat room'
-    )
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room, limit=5)), json=False, broadcast=True, room=room)
+
+    user_data = users.get_single_user_data(conn=mongodb_conn, user_id=request.sid)
+    users.disconnect(conn=mongodb_conn, room=user_data['room'], request=request)
+
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=user_data['room'], limit=5)), json=False, broadcast=True, room=user_data['room'])
     mongodb_client.close()
 
-    emit('MESSAGE', messeges[room], broadcast=True, room=room)
-    emit('USER_ONLINE_PUBLIC_DATA', users_online)
-
-    del users_online[request.sid]
+    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=user_data['room'])), json=False, broadcast=True, room=user_data['room'])
 
 
 @socketio.on('SEND_MESSAGE')
@@ -118,22 +88,12 @@ def client_join_room(data):
 
     mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
 
-    messages.insert(
+    users.change_room(
         conn=mongodb_conn,
-        user='system',
-        user_id=request.sid,
-        user_room=leave_room,
-        color='red',
-        msg=username +' has left the room'
-    )
-
-    messages.insert(
-        conn=mongodb_conn,
-        user='system',
-        user_id=request.sid,
-        user_room=go_to_room,
-        color='green',
-        msg=username +' has join the room'
+        request=request,
+        leave_room=leave_room,
+        go_to_room=go_to_room,
+        username=username
     )
 
     emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=leave_room, limit=5)), json=False, broadcast=True, room=leave_room)
