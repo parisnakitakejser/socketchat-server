@@ -25,6 +25,7 @@ def connect(conn=None, room=None, request=None):
         user='system',
         user_id=request.sid,
         user_room=room,
+        type='system',
         color='yellow',
         msg=username + ' has connected to this chat room'
     )
@@ -46,6 +47,7 @@ def disconnect(conn=None, room=None, request=None):
         user='system',
         user_id=request.sid,
         user_room=room,
+        type='system',
         color='pink',
         msg=user_data['user_name'] + ' has disconnected from the chat room'
     )
@@ -82,6 +84,7 @@ def change_room(conn=None, request=None, leave_room=None, go_to_room=None, usern
         user='system',
         user_id=request.sid,
         user_room=leave_room,
+        type='system',
         color='red',
         msg=f'{username} has left the room'
     )
@@ -91,6 +94,7 @@ def change_room(conn=None, request=None, leave_room=None, go_to_room=None, usern
         user='system',
         user_id=request.sid,
         user_room=go_to_room,
+        type='system',
         color='green',
         msg=f'{username} has join the room'
     )

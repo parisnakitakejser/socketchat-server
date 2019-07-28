@@ -33,9 +33,9 @@ def client_connect():
 
     join_room(room)
 
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room, limit=5)), json=False, broadcast=True, room=room)
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
 
-    # emit('USER_DATA', users_online[request.sid])
+    emit('USER_DATA', dumps(users.get_single_user_data(conn=mongodb_conn ,user_id=request.sid)))
     emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
 
     mongodb_client.close()
@@ -48,7 +48,7 @@ def client_disconnect():
     user_data = users.get_single_user_data(conn=mongodb_conn, user_id=request.sid)
     users.disconnect(conn=mongodb_conn, room=user_data['room'], request=request)
 
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=user_data['room'], limit=5)), json=False, broadcast=True, room=user_data['room'])
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=user_data['room'])), json=False, broadcast=True, room=user_data['room'])
     mongodb_client.close()
 
     emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=user_data['room'])), json=False, broadcast=True, room=user_data['room'])
@@ -58,19 +58,20 @@ def client_disconnect():
 def client_send_message(data):
     if data['msg'].strip() != '':
         mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
-        room = users_online[request.sid]['room']
+        user_data = users.get_single_user_data(conn=mongodb_conn, user_id=request.sid)
+        room = user_data['room']
 
         print('client send message')
 
         messages.insert(
             conn=mongodb_conn,
-            user_id=users_online[request.sid]['username'],
+            user_id=request.sid,
             user_room=room,
             color=data['color'],
             msg=data['msg']
         )
 
-        emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room, limit=5)), json=False, broadcast=True, room=room)
+        emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
         mongodb_client.close()
     else:
         print('empty message, its not sending back')
@@ -78,15 +79,14 @@ def client_send_message(data):
 
 @socketio.on('join')
 def client_join_room(data):
-    username = users_online[request.sid]['username']
+    mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
+    user_data = users.get_single_user_data(conn=mongodb_conn, user_id=request.sid)
+    username = user_data['user_name']
 
-    leave_room = users_online[request.sid]['room']
+    leave_room = user_data['room']
     go_to_room = data['room']
 
     join_room(go_to_room)
-    users_online[request.sid]['room'] = go_to_room
-
-    mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
 
     users.change_room(
         conn=mongodb_conn,
@@ -96,13 +96,13 @@ def client_join_room(data):
         username=username
     )
 
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=leave_room, limit=5)), json=False, broadcast=True, room=leave_room)
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=go_to_room, limit=5)), json=False, broadcast=True, room=go_to_room)
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=leave_room)), json=False, broadcast=True, room=leave_room)
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=go_to_room)), json=False, broadcast=True, room=go_to_room)
     mongodb_client.close()
 
 
 @socketio.on('leave')
-def client_join_room(data):
+def client_leave_room(data):
     pass
 
 

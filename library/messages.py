@@ -13,8 +13,8 @@ def insert(conn=None, user='user', user_room=None, user_id=None, type='normal', 
    })
 
 
-def get(conn=None, room=None, limit=5):
+def get(conn=None, room=None, limit=50):
    return conn['messages'].find({
       'user_room': room
-   }).limit(limit)
+   }).sort([('created_at', -1)]).limit(limit)
 
