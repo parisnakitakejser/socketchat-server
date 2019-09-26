@@ -8,6 +8,7 @@ import datetime
 import library
 from library import messages
 from library import users
+from library import rooms
 
 config = library.init_config()
 
@@ -17,28 +18,26 @@ socketio = SocketIO(app)
 
 # Flask or Socket.IO transport layer can be added here!
 
-users_online = {}
-guest_vistor_count = 0
 
 @socketio.on('connect')
 def client_connect():
-    global guest_vistor_count
-
     print('client connected')
 
-    room = 'lobby'
-
     mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
-    users.connect(conn=mongodb_conn, room=room, request=request)
+    data_rooms = rooms.get_all(conn=mongodb_conn)
+    default_room = data_rooms['default']
 
-    join_room(room)
+    user_data = users.connect(conn=mongodb_conn, room=default_room, request=request)
 
-    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
+    join_room(default_room)
 
-    emit('USER_DATA', dumps(users.get_single_user_data(conn=mongodb_conn ,user_id=request.sid)))
-    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=room)), json=False, broadcast=True, room=room)
+    emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=default_room)), json=False, broadcast=True, room=default_room)
 
+    emit('USER_DATA', dumps(user_data))
+    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=default_room)), json=False, broadcast=True, room=default_room)
+    emit('GET_ROOMS', dumps(data_rooms['data']), json=False, broadcast=True, room=default_room)
     mongodb_client.close()
+
 
 @socketio.on('disconnect')
 def client_disconnect():
@@ -97,7 +96,15 @@ def client_join_room(data):
     )
 
     emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=leave_room)), json=False, broadcast=True, room=leave_room)
+    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=leave_room)), json=False, broadcast=True, room=leave_room)
+
     emit('MESSAGE', dumps(messages.get(conn=mongodb_conn, room=go_to_room)), json=False, broadcast=True, room=go_to_room)
+    emit('USER_ONLINE_PUBLIC_DATA', dumps(users.get_room_users(conn=mongodb_conn, room=go_to_room)), json=False, broadcast=True, room=go_to_room)
+
+    data_rooms = rooms.get_all(conn=mongodb_conn)
+    emit('GET_ROOMS', dumps(data_rooms['data']), json=False, broadcast=True, room=leave_room)
+    emit('GET_ROOMS', dumps(data_rooms['data']), json=False, broadcast=True, room=go_to_room)
+
     mongodb_client.close()
 
 

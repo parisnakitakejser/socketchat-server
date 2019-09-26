@@ -1,0 +1,9 @@
+# Default room data
+{
+    "name" : "Lobby Chat Room",
+    "default" : true
+}
+{
+    "name" : "Members Chat Room",
+    "default" : false
+}

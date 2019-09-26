@@ -6,6 +6,7 @@ from library import messages
 def connect(conn=None, room=None, request=None):
     guest_vistor_count = 0
     username = f'Guest #{guest_vistor_count + 1}'
+
     conn['online-users'].update_one({
         'user_id': request.sid,
     }, {
@@ -29,6 +30,8 @@ def connect(conn=None, room=None, request=None):
         color='yellow',
         msg=username + ' has connected to this chat room'
     )
+
+    return get_single_user_data(conn=conn, user_id=request.sid)
 
 
 def disconnect(conn=None, room=None, request=None):
@@ -70,6 +73,15 @@ def get_room_users(conn=None, room=None):
     return room_data
 
 
+def get_room_users_count(conn=None, room=None):
+    count_online_users = conn['online-users'].count_documents({
+        'room': room,
+        'disconnected_at': None
+    })
+
+    return count_online_users
+
+
 def change_room(conn=None, request=None, leave_room=None, go_to_room=None, username=None):
     conn['online-users'].update_one({
         'user_id': request.sid,
@@ -98,3 +110,4 @@ def change_room(conn=None, request=None, leave_room=None, go_to_room=None, usern
         color='green',
         msg=f'{username} has join the room'
     )
+
