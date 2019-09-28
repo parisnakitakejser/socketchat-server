@@ -5,3 +5,6 @@ secret_key = very-seceret
 host = localhost
 port = 27017
 database = project-socket-chat
+
+[system]
+max-idle-time=300

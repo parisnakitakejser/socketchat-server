@@ -1,10 +1,11 @@
 import library
 
-from datetime import datetime
+from datetime import datetime, timedelta
+
 config = library.init_config()
 conn, client = library.init_mongodb_conn(config=config)
 
-lt_time = (datetime.timestamp(datetime.utcnow()) - config.getint('system', 'max-idle-time', fallback=60))
+lt_time = (datetime.utcnow() - timedelta(seconds=config.getint('system', 'max-idle-time', fallback=60)))
 
 rows = conn['online-users'].find({
     'disconnected_at': None,

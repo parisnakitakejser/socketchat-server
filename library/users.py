@@ -1,5 +1,4 @@
-import time
-
+from datetime import datetime
 from library import messages
 
 
@@ -14,9 +13,9 @@ def connect(conn=None, room=None, request=None):
             'user_name': username,
             'user_rank': 'guest',
             'room': room,
-            'connected_at': time.time(),
+            'connected_at': datetime.utcnow(),
             'disconnected_at': None,
-            'last_active_at': time.time(),
+            'last_active_at': datetime.utcnow(),
             'last_messages_at': None
         }
     }, upsert=True)
@@ -41,7 +40,7 @@ def disconnect(conn=None, room=None, request=None):
         'user_id': request.sid,
     }, {
         '$set': {
-            'disconnected_at': time.time(),
+            'disconnected_at': datetime.utcnow(),
         }
     })
 
