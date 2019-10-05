@@ -1,5 +1,6 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_cors import CORS
 from bson.json_util import dumps
 
 import time
@@ -13,10 +14,33 @@ from library import rooms
 config = library.init_config()
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": "*"
+    }
+})
 app.config['SECRET_KEY'] = config['flask']['secret_key']
 socketio = SocketIO(app)
 
 # Flask or Socket.IO transport layer can be added here!
+@app.route('/ping')
+def ping_service():
+    mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
+
+    if users.update_idle_time(conn=mongodb_conn, request=request):
+        response_data = {
+            'status': 'OK',
+            'code': 200
+        }
+    else:
+        response_data = {
+            'status': 'ERROR',
+            'code': 404
+        }
+
+    mongodb_client.close()
+
+    return jsonify(response_data)
 
 
 @socketio.on('connect')

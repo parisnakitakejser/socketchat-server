@@ -1,4 +1,5 @@
 from datetime import datetime
+from bson.objectid import ObjectId
 from library import messages
 
 
@@ -110,3 +111,21 @@ def change_room(conn=None, request=None, leave_room=None, go_to_room=None, usern
         msg=f'{username} has join the room'
     )
 
+
+def update_idle_time(conn=None, request=None):
+    result = conn['online-users'].update_one({
+        '_id': ObjectId(request.args.get('id')),
+        'user_id': request.args.get('user_id'),
+    }, {
+        '$set': {
+            'last_active_at': datetime.utcnow(),
+            'last_idle_at': datetime.utcnow()
+        }
+    })
+
+    print('updated result', result.modified_count)
+
+    if result.modified_count > 0:
+        return True
+    else:
+        return False
