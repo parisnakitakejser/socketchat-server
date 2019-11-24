@@ -49,7 +49,7 @@ def client_connect():
 
     mongodb_conn, mongodb_client = library.init_mongodb_conn(config)
     data_rooms = rooms.get_all(conn=mongodb_conn)
-    default_room = data_rooms['default']
+    default_room = request.args['room'] if 'room' in request.args and request.args['room'] is not None else data_rooms['default']
 
     user_data = users.connect(conn=mongodb_conn, room=default_room, request=request)
 
