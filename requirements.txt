@@ -1,7 +1,7 @@
 cffi==1.12.3
 Click==7.0
 Flask==1.0.3
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-SocketIO==4.1.0
 gevent==1.4.0
 gevent-websocket==0.10.1
